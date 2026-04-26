@@ -1,0 +1,31 @@
+{
+  "name": "restaurante-vue",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "preview": "nuxt preview",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "jsonwebtoken": "^9.0.2",
+    "nuxt": "^4.4.2",
+    "pdf-parse": "^2.4.5",
+    "pg": "^8.11.0"
+  },
+  "devDependencies": {
+    "@oxc-minify/binding-win32-x64-msvc": "^0.117.0",
+    "@oxc-parser/binding-win32-x64-msvc": "^0.117.0",
+    "@oxc-transform/binding-win32-x64-msvc": "^0.117.0",
+    "@tailwindcss/vite": "^4.2.4",
+    "@types/jsonwebtoken": "^9.0.0",
+    "@types/node": "^20.0.0",
+    "eslint": "^8.57.0",
+    "lucide-vue-next": "^1.0.0",
+    "tailwindcss": "^4.2.4",
+    "typescript": "~5.5.0",
+    "vue-tsc": "^3.2.7"
+  }
+}
