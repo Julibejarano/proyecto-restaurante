@@ -5,6 +5,7 @@ export default defineNuxtConfig({
   ssr: false,
   compatibilityDate: '2026-04-23',
   runtimeConfig: {
+    databaseUrl: process.env.DATABASE_URL || '',
     pgHost: process.env.PG_HOST || 'localhost',
     pgPort: process.env.PG_PORT || 5432,
     pgDatabase: process.env.PG_DATABASE || 'restaurant_db',

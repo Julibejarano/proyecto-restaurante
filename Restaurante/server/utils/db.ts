@@ -5,21 +5,29 @@ import { useRuntimeConfig } from '#imports'
 const config = useRuntimeConfig()
 
 // Pool para conectar a la DB por defecto para crear la DB si no existe
-const adminPool = new Pool({
-  host: config.pgHost,
-  port: Number(config.pgPort),
-  database: 'postgres', // DB por defecto
-  user: config.pgUser,
-  password: config.pgPassword,
-})
+const adminPool = new Pool(
+  config.databaseUrl 
+    ? { connectionString: config.databaseUrl, ssl: { rejectUnauthorized: false } }
+    : {
+        host: config.pgHost,
+        port: Number(config.pgPort),
+        database: 'postgres', // DB por defecto
+        user: config.pgUser,
+        password: config.pgPassword,
+      }
+)
 
-const pool = new Pool({
-  host: config.pgHost,
-  port: Number(config.pgPort),
-  database: config.pgDatabase,
-  user: config.pgUser,
-  password: config.pgPassword,
-})
+const pool = new Pool(
+  config.databaseUrl
+    ? { connectionString: config.databaseUrl, ssl: { rejectUnauthorized: false } }
+    : {
+        host: config.pgHost,
+        port: Number(config.pgPort),
+        database: config.pgDatabase,
+        user: config.pgUser,
+        password: config.pgPassword,
+      }
+)
 
 export async function query<T = any>(text: string, values: any[] = []) {
   const result = await pool.query<T>(text, values)
