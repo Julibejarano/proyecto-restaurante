@@ -1,12 +1,29 @@
 <template>
   <div class="space-y-8 animate-in fade-in duration-500">
-    <div class="flex items-center gap-4">
-      <div class="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-primary">
-        <Settings class="w-6 h-6" />
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-primary">
+          <Settings class="w-6 h-6" />
+        </div>
+        <div>
+          <h1 class="text-3xl font-black text-gray-900 tracking-tight">Panel Administrativo</h1>
+          <p class="text-gray-500 font-medium mt-1">Configuración general del restaurante</p>
+        </div>
       </div>
-      <div>
-        <h1 class="text-3xl font-black text-gray-900 tracking-tight">Panel Administrativo</h1>
-        <p class="text-gray-500 font-medium mt-1">Configuración general del restaurante</p>
+      
+      <div class="bg-white px-6 py-4 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-6">
+        <div>
+          <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Ocupación en Vivo</p>
+          <div class="flex items-baseline gap-2">
+            <span class="text-3xl font-black" :class="ocupacionInfo.porcentaje >= 80 ? 'text-red-500' : 'text-primary'">{{ ocupacionInfo.ocupacion_actual }}</span>
+            <span class="text-gray-500 font-medium">/ {{ ocupacionInfo.capacidad_total }} Personas</span>
+          </div>
+        </div>
+        <div class="w-32 h-2.5 bg-gray-100 rounded-full overflow-hidden">
+          <div class="h-full rounded-full transition-all duration-1000" 
+               :class="ocupacionInfo.porcentaje >= 80 ? 'bg-red-500' : (ocupacionInfo.porcentaje >= 50 ? 'bg-orange-400' : 'bg-primary')"
+               :style="{ width: ocupacionInfo.porcentaje + '%' }"></div>
+        </div>
       </div>
     </div>
 
@@ -151,8 +168,16 @@ const newMesa = ref({ numero: '', capacidad: '' })
 const newMenuItem = ref({ nombre: '', descripcion: '', precio: '', tiempo_preparacion: '', categoria: '' })
 const newEmployee = ref({ username: '', name: '', password: '', role: '', especialidad: '' })
 
+const ocupacionInfo = ref({ ocupacion_actual: 0, capacidad_total: 50, porcentaje: 0 })
+
 const refreshData = async () => {
-  mesas.value = await $fetch('/api/mesas')
+  const ocu = await $fetch('/api/reportes/ocupacion') as any
+  mesas.value = ocu.mesas
+  ocupacionInfo.value = {
+    ocupacion_actual: ocu.ocupacion_actual,
+    capacidad_total: ocu.capacidad_total,
+    porcentaje: ocu.porcentaje
+  }
   menu.value = await $fetch('/api/menu')
   employees.value = await $fetch('/api/users')
 }
