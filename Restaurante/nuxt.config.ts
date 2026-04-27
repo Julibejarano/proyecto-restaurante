@@ -3,6 +3,13 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineNuxtConfig({
   ssr: false,
+  components: [
+    {
+      path: '~/components/ui',
+      pathPrefix: false,
+    },
+    '~/components'
+  ],
   compatibilityDate: '2026-04-23',
   runtimeConfig: {
     databaseUrl: process.env.DATABASE_URL || '',

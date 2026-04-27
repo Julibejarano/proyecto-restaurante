@@ -4,11 +4,13 @@ import { readBody } from 'h3'
 export default defineEventHandler(async (event) => {
   const body = await readBody(event) as { mesa_id?: number; cliente?: string; items?: number[] }
 
-  if (!body.mesa_id || !body.cliente || !body.items?.length) {
-    throw createError({ statusCode: 400, statusMessage: 'Mesa, cliente e ítems son obligatorios' })
+  const clienteName = body.cliente || 'Anónimo'
+
+  if (!body.mesa_id || !body.items?.length) {
+    throw createError({ statusCode: 400, statusMessage: 'Mesa e ítems son obligatorios' })
   }
 
-  const result = await query('INSERT INTO pedidos (mesa_id, cliente, estado) VALUES ($1, $2, $3) RETURNING id', [body.mesa_id, body.cliente, 'en_preparacion'])
+  const result = await query('INSERT INTO pedidos (mesa_id, cliente, estado) VALUES ($1, $2, $3) RETURNING id', [body.mesa_id, clienteName, 'en_preparacion'])
   const pedidoId = result[0]?.id
   if (!pedidoId) {
     throw createError({ statusCode: 500, statusMessage: 'No se pudo crear el pedido' })

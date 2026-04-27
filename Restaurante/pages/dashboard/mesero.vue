@@ -170,26 +170,30 @@ let previousListos = new Set()
 let intervalId: any;
 
 const refreshData = async () => {
-  const [pRes, mRes, menuRes] = await Promise.all([
-    $fetch('/api/pedidos'),
-    $fetch('/api/mesas'),
-    $fetch('/api/menu')
-  ])
-  pedidos.value = pRes as any[]
-  mesas.value = mRes as any[]
-  menuItems.value = menuRes as any[]
-  
-  // Lógica de notificaciones
-  const currentListos = new Set(pedidos.value.filter(p => p.estado === 'listo').map(p => p.id))
-  for (const id of currentListos) {
-    if (!previousListos.has(id)) {
-      const pedido = pedidos.value.find(p => p.id === id)
-      const nId = Date.now() + Math.random()
-      notifications.value.push({ id: nId, message: `Mesa #${pedido?.mesa_numero ?? pedido?.mesa_id} está lista para entregar.` })
-      setTimeout(() => { notifications.value = notifications.value.filter(n => n.id !== nId) }, 6000)
+  try {
+    const [pRes, mRes, menuRes] = await Promise.all([
+      $fetch('/api/pedidos'),
+      $fetch('/api/reportes/ocupacion'),
+      $fetch('/api/menu')
+    ])
+    pedidos.value = pRes as any[] || []
+    mesas.value = (mRes as any)?.mesas?.filter((m: any) => m.ocupada) || []
+    menuItems.value = menuRes as any[] || []
+    
+    // Lógica de notificaciones
+    const currentListos = new Set(pedidos.value.filter(p => p.estado === 'listo').map(p => p.id))
+    for (const id of currentListos) {
+      if (!previousListos.has(id)) {
+        const pedido = pedidos.value.find(p => p.id === id)
+        const nId = Date.now() + Math.random()
+        notifications.value.push({ id: nId, message: `Mesa #${pedido?.mesa_numero ?? pedido?.mesa_id} está lista para entregar.` })
+        setTimeout(() => { notifications.value = notifications.value.filter(n => n.id !== nId) }, 6000)
+      }
     }
+    previousListos = currentListos
+  } catch (error) {
+    console.error("Error cargando datos del mesero:", error)
   }
-  previousListos = currentListos
 }
 
 onMounted(() => {

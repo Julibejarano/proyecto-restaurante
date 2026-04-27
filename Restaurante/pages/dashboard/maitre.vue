@@ -18,10 +18,10 @@
             <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
               <CalendarPlus class="w-4 h-4" />
             </div>
-            <h2 class="text-xl font-bold text-gray-900">Nueva Reserva</h2>
+            <h2 class="text-xl font-bold text-gray-900">{{ editingReservaId ? 'Editar Reserva' : 'Nueva Reserva' }}</h2>
           </div>
           
-          <form @submit.prevent="createReserva" class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-gray-50 p-6 rounded-2xl border border-gray-100">
+          <form @submit.prevent="saveReserva" class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-gray-50 p-6 rounded-2xl border border-gray-100">
             <Input v-model="newReserva.cliente" placeholder="Nombre del cliente" required class="md:col-span-2" />
             <select v-model.number="newReserva.mesa_id" required class="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:ring-4 focus:ring-primary/15 focus:border-primary">
               <option disabled value="0">Seleccionar Mesa</option>
@@ -29,9 +29,16 @@
             </select>
             <Input v-model.number="newReserva.numero_personas" type="number" placeholder="Personas" min="1" required />
             <Input v-model="newReserva.fecha_hora" type="datetime-local" required class="md:col-span-2" />
-            <Button type="submit" variant="primary" class="md:col-span-2 flex items-center justify-center gap-2">
-              <Plus class="w-4 h-4" /> Registrar Reserva
-            </Button>
+            <div class="md:col-span-2 flex gap-3">
+              <Button type="submit" variant="primary" class="flex-1 flex items-center justify-center gap-2">
+                <Plus v-if="!editingReservaId" class="w-4 h-4" />
+                <Pencil v-else class="w-4 h-4" />
+                {{ editingReservaId ? 'Guardar Cambios' : 'Registrar Reserva' }}
+              </Button>
+              <Button v-if="editingReservaId" type="button" @click="cancelEditReserva" class="flex items-center justify-center gap-2 text-gray-500 hover:text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 px-6 rounded-xl font-bold transition-colors">
+                Cancelar
+              </Button>
+            </div>
           </form>
         </GlassCard>
 
@@ -63,9 +70,14 @@
                 <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Mesa Asignada</p>
                 <p class="text-2xl font-black text-primary">#{{ reserva.mesa_numero ?? reserva.mesa_id }}</p>
               </div>
-              <button @click="deleteReserva(reserva.id)" class="w-10 h-10 flex items-center justify-center rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors bg-gray-50 md:bg-transparent">
-                <Trash2 class="w-5 h-5" />
-              </button>
+              <div class="flex items-center gap-2">
+                <button @click="editReserva(reserva)" class="w-10 h-10 flex items-center justify-center rounded-xl text-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors bg-gray-50 md:bg-transparent">
+                  <Pencil class="w-5 h-5" />
+                </button>
+                <button @click="deleteReserva(reserva.id)" class="w-10 h-10 flex items-center justify-center rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors bg-gray-50 md:bg-transparent">
+                  <Trash2 class="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </GlassCard>
         </div>
@@ -82,11 +94,18 @@
           </div>
           
           <div class="grid grid-cols-2 gap-4">
-            <GlassCard v-for="mesa in mesas" :key="mesa.id" class="text-center !p-6 flex flex-col items-center justify-center hover:bg-emerald-50/50 hover:border-emerald-200 group cursor-default transition-colors">
-              <div class="w-12 h-12 rounded-full bg-gray-50 group-hover:bg-emerald-100 flex items-center justify-center mb-3 transition-colors">
-                <span class="text-2xl font-black text-gray-900 group-hover:text-emerald-700">{{ mesa.numero }}</span>
+            <GlassCard v-for="mesa in mesas" :key="mesa.id" 
+              :class="[
+                'text-center !p-6 flex flex-col items-center justify-center cursor-default transition-all duration-300',
+                mesa.ocupada ? 'bg-red-50/80 border-red-200 shadow-red-500/10' : 'hover:bg-emerald-50/50 hover:border-emerald-200 group'
+              ]">
+              <div :class="[
+                'w-12 h-12 rounded-full flex items-center justify-center mb-3 transition-colors',
+                mesa.ocupada ? 'bg-red-100 text-red-700' : 'bg-gray-50 group-hover:bg-emerald-100'
+              ]">
+                <span :class="['text-2xl font-black', mesa.ocupada ? 'text-red-700' : 'text-gray-900 group-hover:text-emerald-700']">{{ mesa.numero }}</span>
               </div>
-              <span class="text-xs font-bold text-gray-500 uppercase tracking-wider group-hover:text-emerald-600 flex items-center gap-1.5">
+              <span :class="['text-xs font-bold uppercase tracking-wider flex items-center gap-1.5', mesa.ocupada ? 'text-red-500' : 'text-gray-500 group-hover:text-emerald-600']">
                 <Users class="w-3.5 h-3.5" /> {{ mesa.capacidad }} Px
               </span>
             </GlassCard>
@@ -115,14 +134,20 @@
 </style>
 
 <script setup lang="ts">
-import { CalendarCheck, CalendarPlus, ListTodo, CalendarX, Calendar, Users, Trash2, LayoutGrid, Plus, BellRing } from 'lucide-vue-next'
+import { CalendarCheck, CalendarPlus, ListTodo, CalendarX, Calendar, Users, Trash2, LayoutGrid, Plus, BellRing, Pencil } from 'lucide-vue-next'
 
 const mesas = ref<any[]>([])
 const reservas = ref<any[]>([])
 const newReserva = ref({ cliente: '', mesa_id: 0, fecha_hora: '', numero_personas: 1 })
+const editingReservaId = ref<number | null>(null)
 
 const mesasFiltradas = computed(() => {
-  return mesas.value.filter(m => m.capacidad >= newReserva.value.numero_personas)
+  const personas = newReserva.value.numero_personas || 1
+  const mesasQueCaben = mesas.value.filter(m => m.capacidad >= personas)
+  if (mesasQueCaben.length === 0) return []
+  
+  const minCap = Math.min(...mesasQueCaben.map(m => Number(m.capacidad)))
+  return mesasQueCaben.filter(m => Number(m.capacidad) === minCap)
 })
 
 const notifications = ref<any[]>([])
@@ -130,7 +155,8 @@ let previousAlerts = new Set()
 let intervalId: any;
 
 const refreshData = async () => {
-  mesas.value = await $fetch('/api/mesas')
+  const ocu = await $fetch('/api/reportes/ocupacion') as any
+  mesas.value = ocu.mesas
   reservas.value = await $fetch('/api/reservas')
   
   // Notificaciones de reservas próximas (30 min)
@@ -157,14 +183,36 @@ onUnmounted(() => {
   if (intervalId) clearInterval(intervalId)
 })
 
-const createReserva = async () => {
+const saveReserva = async () => {
   try {
-    await $fetch('/api/reservas', { method: 'POST', body: newReserva.value })
+    if (editingReservaId.value) {
+      await $fetch(`/api/reservas/${editingReservaId.value}`, { method: 'PUT', body: newReserva.value })
+      editingReservaId.value = null
+    } else {
+      await $fetch('/api/reservas', { method: 'POST', body: newReserva.value })
+    }
     newReserva.value = { cliente: '', mesa_id: 0, fecha_hora: '', numero_personas: 1 }
     refreshData()
   } catch (err: any) {
-    alert(err.statusMessage || "Error al crear reservación")
+    alert(err.statusMessage || "Error al guardar reservación")
   }
+}
+
+const editReserva = (res: any) => {
+  editingReservaId.value = res.id
+  const d = new Date(res.fecha_hora)
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
+  newReserva.value = {
+    cliente: res.cliente,
+    mesa_id: res.mesa_id,
+    fecha_hora: d.toISOString().slice(0, 16),
+    numero_personas: res.numero_personas
+  }
+}
+
+const cancelEditReserva = () => {
+  editingReservaId.value = null
+  newReserva.value = { cliente: '', mesa_id: 0, fecha_hora: '', numero_personas: 1 }
 }
 
 const deleteReserva = async (id: number) => {

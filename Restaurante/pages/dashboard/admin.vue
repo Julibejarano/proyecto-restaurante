@@ -37,11 +37,16 @@
           <h2 class="text-xl font-bold text-gray-900">Gestión de Mesas</h2>
         </div>
         
-        <form @submit.prevent="createMesa" class="flex gap-3 mb-6 bg-gray-50 p-4 rounded-xl border border-gray-100">
+        <form @submit.prevent="saveMesa" class="flex flex-wrap gap-3 mb-6 bg-gray-50 p-4 rounded-xl border border-gray-100">
           <Input v-model.number="newMesa.numero" type="number" placeholder="Número" required class="flex-1" />
           <Input v-model.number="newMesa.capacidad" type="number" placeholder="Capacidad" required class="flex-1" />
           <Button type="submit" variant="primary" class="whitespace-nowrap flex items-center gap-2">
-            <Plus class="w-4 h-4" /> Agregar
+            <Plus v-if="!editingMesaId" class="w-4 h-4" />
+            <Pencil v-else class="w-4 h-4" />
+            {{ editingMesaId ? 'Guardar' : 'Agregar' }}
+          </Button>
+          <Button v-if="editingMesaId" type="button" @click="cancelEditMesa" class="whitespace-nowrap flex items-center gap-2 text-gray-500 hover:text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 px-4 py-2.5 rounded-xl font-bold">
+             Cancelar
           </Button>
         </form>
 
@@ -54,9 +59,14 @@
                 <p class="text-sm text-gray-500 font-medium">{{ mesa.capacidad }} Personas max.</p>
               </div>
             </div>
-            <button @click="removeMesa(mesa.id)" class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
-              <Trash2 class="w-4 h-4" />
-            </button>
+            <div class="flex items-center gap-2">
+              <button @click="editMesa(mesa)" class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-blue-500 hover:bg-blue-50 transition-colors">
+                <Pencil class="w-4 h-4" />
+              </button>
+              <button @click="removeMesa(mesa.id)" class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+                <Trash2 class="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       </GlassCard>
@@ -115,7 +125,7 @@
           <h2 class="text-xl font-bold text-gray-900">Gestión del Menú</h2>
         </div>
 
-        <form @submit.prevent="createMenuItem" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 bg-gray-50 p-6 rounded-2xl border border-gray-100">
+        <form @submit.prevent="saveMenuItem" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 bg-gray-50 p-6 rounded-2xl border border-gray-100">
           <Input v-model="newMenuItem.nombre" placeholder="Nombre del plato" required class="md:col-span-2" />
           <Input v-model.number="newMenuItem.precio" type="number" placeholder="Precio ($)" step="0.01" required />
           <select v-model="newMenuItem.categoria" required class="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:ring-4 focus:ring-primary/15 focus:border-primary">
@@ -127,9 +137,16 @@
           </select>
           <Input v-model.number="newMenuItem.tiempo_preparacion" type="number" placeholder="Tiempo preparación (min)" required class="md:col-span-2" />
           <Input v-model="newMenuItem.descripcion" placeholder="Descripción breve" class="md:col-span-2" />
-          <Button type="submit" variant="primary" class="md:col-span-4 flex justify-center items-center gap-2">
-            <Plus class="w-4 h-4" /> Añadir Plato al Menú
-          </Button>
+          <div class="md:col-span-4 flex gap-3">
+            <Button type="submit" variant="primary" class="flex-1 flex justify-center items-center gap-2">
+              <Plus v-if="!editingMenuId" class="w-4 h-4" />
+              <Pencil v-else class="w-4 h-4" />
+              {{ editingMenuId ? 'Guardar Cambios' : 'Añadir Plato al Menú' }}
+            </Button>
+            <Button v-if="editingMenuId" type="button" @click="cancelEditMenu" class="flex justify-center items-center gap-2 text-gray-500 hover:text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 px-6 py-2.5 rounded-xl font-bold">
+              Cancelar
+            </Button>
+          </div>
         </form>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -146,9 +163,14 @@
               <span class="text-xs font-semibold text-gray-400 flex items-center gap-1">
                 <Clock class="w-3 h-3" /> {{ item.tiempo_preparacion }} min
               </span>
-              <button @click="deleteMenuItem(item.id)" class="text-red-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded-lg transition-colors">
-                <Trash2 class="w-4 h-4" />
-              </button>
+              <div class="flex items-center gap-2">
+                <button @click="editMenuItem(item)" class="text-blue-400 hover:text-blue-600 p-1.5 hover:bg-blue-50 rounded-lg transition-colors">
+                  <Pencil class="w-4 h-4" />
+                </button>
+                <button @click="deleteMenuItem(item.id)" class="text-red-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded-lg transition-colors">
+                  <Trash2 class="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -158,7 +180,7 @@
 </template>
 
 <script setup lang="ts">
-import { Settings, LayoutGrid, Plus, Trash2, Users, UserPlus, Coffee, Clock } from 'lucide-vue-next'
+import { Settings, LayoutGrid, Plus, Trash2, Users, UserPlus, Coffee, Clock, Pencil } from 'lucide-vue-next'
 
 const mesas = ref<any[]>([])
 const menu = ref<any[]>([])
@@ -167,6 +189,9 @@ const employees = ref<any[]>([])
 const newMesa = ref({ numero: '', capacidad: '' })
 const newMenuItem = ref({ nombre: '', descripcion: '', precio: '', tiempo_preparacion: '', categoria: '' })
 const newEmployee = ref({ username: '', name: '', password: '', role: '', especialidad: '' })
+
+const editingMesaId = ref<number | null>(null)
+const editingMenuId = ref<number | null>(null)
 
 const ocupacionInfo = ref({ ocupacion_actual: 0, capacidad_total: 50, porcentaje: 0 })
 
@@ -184,10 +209,27 @@ const refreshData = async () => {
 
 onMounted(refreshData)
 
-const createMesa = async () => {
-  await $fetch('/api/mesas', { method: 'POST', body: newMesa.value })
+const saveMesa = async () => {
+  try {
+    if (editingMesaId.value) {
+      await $fetch(`/api/mesas/${editingMesaId.value}`, { method: 'PUT', body: newMesa.value })
+      editingMesaId.value = null
+    } else {
+      await $fetch('/api/mesas', { method: 'POST', body: newMesa.value })
+    }
+    newMesa.value = { numero: '', capacidad: '' }
+    refreshData()
+  } catch (err: any) {
+    alert(err.statusMessage || "Error al guardar la mesa")
+  }
+}
+const editMesa = (mesa: any) => {
+  editingMesaId.value = mesa.id
+  newMesa.value = { numero: mesa.numero, capacidad: mesa.capacidad }
+}
+const cancelEditMesa = () => {
+  editingMesaId.value = null
   newMesa.value = { numero: '', capacidad: '' }
-  refreshData()
 }
 const removeMesa = async (id: number) => {
   await $fetch(`/api/mesas/${id}`, { method: 'DELETE' })
@@ -200,10 +242,23 @@ const createEmployee = async () => {
   refreshData()
 }
 
-const createMenuItem = async () => {
-  await $fetch('/api/menu', { method: 'POST', body: newMenuItem.value })
+const saveMenuItem = async () => {
+  if (editingMenuId.value) {
+    await $fetch(`/api/menu/${editingMenuId.value}`, { method: 'PUT', body: newMenuItem.value })
+    editingMenuId.value = null
+  } else {
+    await $fetch('/api/menu', { method: 'POST', body: newMenuItem.value })
+  }
   newMenuItem.value = { nombre: '', descripcion: '', precio: '', tiempo_preparacion: '', categoria: '' }
   refreshData()
+}
+const editMenuItem = (item: any) => {
+  editingMenuId.value = item.id
+  newMenuItem.value = { ...item }
+}
+const cancelEditMenu = () => {
+  editingMenuId.value = null
+  newMenuItem.value = { nombre: '', descripcion: '', precio: '', tiempo_preparacion: '', categoria: '' }
 }
 const deleteMenuItem = async (id: number) => {
   await $fetch(`/api/menu/${id}`, { method: 'DELETE' })
